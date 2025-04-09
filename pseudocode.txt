@@ -1,0 +1,88 @@
+Pseudocode forAuto-Complete System
+CLASS TrieNode
+    children ← Empty Map
+    suggestions ← Empty List
+    frequency ← Empty Map
+    isEndOfWord ← FALSE
+END CLASS
+
+FUNCTION insertPhrase(trie, phrase, context)
+    currentNode ← trie.root
+    FOR each character 'c' in phrase
+        IF 'c' is not in currentNode.children
+            currentNode.children['c'] ← New TrieNode
+        END IF
+        currentNode ← currentNode.children['c']
+        
+        IF phrase NOT IN currentNode.suggestions
+            IF SIZE(currentNode.suggestions) < 5
+                ADD phrase TO currentNode.suggestions
+            ELSE
+                REMOVE least frequent phrase
+                ADD phrase TO currentNode.suggestions
+            END IF
+        END IF
+        currentNode.frequency[phrase] += 1
+        currentNode.context[context] += 1
+    END FOR
+    currentNode.isEndOfWord ← TRUE
+END FUNCTION
+
+FUNCTION getSuggestions(trie, prefix, context)
+    currentNode ← trie.root
+    FOR each character 'c' in prefix
+        IF 'c' NOT IN currentNode.children
+            RETURN []
+        END IF
+        currentNode ← currentNode.children['c']
+    END FOR
+
+    rankedSuggestions ← SORT currentNode.suggestions BY:
+        1. Context relevance
+        2. Frequency
+        3. Recency of use
+    
+    RETURN top 5 entries in rankedSuggestions
+END FUNCTION
+
+FUNCTION learnFromUserInput(trie, inputPhrase)
+    IF inputPhrase IS NOT IN trie
+        insertPhrase(trie, inputPhrase, "USER_DEFINED")
+    ELSE
+        trie.frequency[inputPhrase] += 1
+    END IF
+END FUNCTION
+
+MAIN
+    trie ← New Trie
+    phrases ← [
+        "I am feeling very happy today",
+        "I am feeling very tired after work",
+        "I am feeling very excited about the weekend",
+        "I am feeling very productive",
+        "I am feeling very cold right now"
+    ]
+
+    FOR each phrase IN phrases
+        insertPhrase(trie, phrase, "GENERAL")
+    END FOR
+
+    LOOP
+        DISPLAY "Type a phrase: "
+        INPUT userInput
+
+        IF userInput NOT IN trie
+            DISPLAY "No suggestions found. Add to learning? (Y/N)"
+            INPUT addToLearning
+            IF addToLearning = 'Y'
+                learnFromUserInput(trie, userInput)
+            END IF
+        ELSE
+            suggestions ← getSuggestions(trie, userInput, "GENERAL")
+            DISPLAY "Suggestions:"
+            FOR each suggestion IN suggestions
+                DISPLAY " - " + suggestion
+            END FOR
+        END IF
+    END LOOP
+END MAIN
